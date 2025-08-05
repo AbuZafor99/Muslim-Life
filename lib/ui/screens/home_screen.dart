@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/category_card.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -16,6 +18,13 @@ class _HomeScreenState extends State<HomeScreen> {
     {'name': 'Isha', 'time': '7:30 pm'},
   ];
 
+  final List<Map<String, String>> category = [
+    {"title": "Prayer Time", "image": "assets/images/pray 1.png"},
+    {"title": "Tasbih", "image": "assets/images/tasbhi.png"},
+    {"title": "Dua", "image": "assets/images/dua 1.png"},
+    {"title": "Quran", "image": "assets/images/quran.png"},
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,10 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.menu,
-                size: 30,
-              ),
+              const Icon(Icons.menu, size: 30),
               const SizedBox(width: 15),
               const Expanded(
                 child: Text(
@@ -49,11 +55,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: const Color(0xFFCEC5D8),
                   borderRadius: BorderRadius.circular(60),
                 ),
-                child: const Icon(
-                  Icons.notifications_none,
-                  size: 30,
-                ),
-              )
+                child: const Icon(Icons.notifications_none, size: 30),
+              ),
             ],
           ),
         ),
@@ -63,9 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             width: double.infinity,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(15)),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -73,12 +74,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(15),
                   child: Image.asset(
                     "assets/images/main_card_bg.png",
-                    height: MediaQuery.of(context).size.height / 4.5,
+                    height: MediaQuery.of(context).size.height / 4.9,
                     fit: BoxFit.cover,
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 23, horizontal: 39),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 23,
+                    horizontal: 39,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -90,6 +94,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        '12:45 PM',
+                        style: TextStyle(
+                          fontFamily: 'playfair',
+                          fontSize: 28,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 5),
@@ -110,48 +124,46 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white70,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            height: MediaQuery.of(context).size.height / 4.5,
+            child: Stack(
+              children: [
+                Image.asset(
+                  "assets/images/Category Section.png",
+                  width: MediaQuery.of(context).size.width,
+                  fit: BoxFit.cover,
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                  child: Column(
+                    children: [
+                      Center(
+                        child: Text(
+                          "Category",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: "playfair",
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       SizedBox(
-                        height: 60,
+                        height: 80,
                         child: ListView.builder(
+                          itemCount: category.length,
+                          shrinkWrap: true,
                           scrollDirection: Axis.horizontal,
-                          itemCount: prayerTimes.length,
                           itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                   decoration: BoxDecoration(
-                                  color: Colors.white12,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white, width: 1),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      prayerTimes[index]['name']!,
-                                      style: const TextStyle(
-                                        fontFamily: 'playfair',
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      prayerTimes[index]['time']!,
-                                      style: const TextStyle(
-                                        fontFamily: 'playfair',
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            return CategoryCard(
+                              title: category[index]['title']!,
+                              image: category[index]['image']!,
                             );
                           },
                         ),
