@@ -51,9 +51,9 @@ flutter:
   fonts:
     - family: playfair
       fonts:
-        - asset: assets/fonts/PlayfairDisplay-Regular.ttf
-        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/PlayfairDisplay-VariableFont_wght.ttf
+#        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
+#          weight: 700
 
   #   - family: Trajan Pro
   #     fonts:
