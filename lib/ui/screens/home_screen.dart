@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:muslim_life/ui/widgets/salat_time_card.dart';
+import 'package:intl/intl.dart';
+import 'package:adhan/adhan.dart';
+import 'package:muslim_life/data/zilla_locations.dart';
+
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/category_card.dart';
-import 'package:muslim_life/ui/widgets/bottom_nav_bar.dart';
+import '../widgets/salat_time_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,15 +15,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex=0;
+  int _selectedIndex = 0;
 
-  final List<Map<String, String>> prayerTimes = [
-    {'name': 'Fajr', 'time': '4:30 am'},
-    {'name': 'Dhuhr', 'time': '1:00 pm'},
-    {'name': 'Asr', 'time': '4:30 pm'},
-    {'name': 'Maghrib', 'time': '6:15 pm'},
-    {'name': 'Isha', 'time': '7:30 pm'},
-  ];
+  late PrayerTimes _prayerTimes;
+  late Coordinates _coordinates;
+  late double _qiblaDirection;
+  bool _loading = true;
+
+  String _selectedDistrict = 'Dhaka';
+  String _selectedAsrMethod = 'Shafi';
+  CalculationMethod _selectedCalculationMethod = CalculationMethod.muslim_world_league;
+
+  List<Map<String, String>> prayerTimes = [];
 
   final List<Map<String, String>> category = [
     {"title": "Prayer Time", "image": "assets/images/pray 1.png"},
@@ -28,6 +34,83 @@ class _HomeScreenState extends State<HomeScreen> {
     {"title": "Dua", "image": "assets/images/dua 1.png"},
     {"title": "Quran", "image": "assets/images/quran.png"},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _calculatePrayerTimes();
+  }
+
+  void _calculatePrayerTimes() {
+    final selected = zillaLocations.firstWhere(
+          (z) => z['name'] == _selectedDistrict,
+      orElse: () => {
+        'name': 'Dhaka',
+        'latitude': 23.8103,
+        'longitude': 90.4125,
+      },
+    );
+    _coordinates = Coordinates(
+      selected['latitude'],
+      selected['longitude'],
+    );
+
+    final params = _getCalculationMethod();
+    final now = DateTime.now();
+    final prayerTimesInstance = PrayerTimes(
+      _coordinates,
+      DateComponents.from(now),
+      params,
+    );
+
+    prayerTimes = [
+      {'name': 'Fajr', 'time': DateFormat('hh:mm a').format(prayerTimesInstance.fajr)},
+      {'name': 'Sunrise', 'time': DateFormat('hh:mm a').format(prayerTimesInstance.sunrise)},
+      {'name': 'Dhuhr', 'time': DateFormat('hh:mm a').format(prayerTimesInstance.dhuhr)},
+      {'name': 'Asr', 'time': DateFormat('hh:mm a').format(prayerTimesInstance.asr)},
+      {'name': 'Maghrib', 'time': DateFormat('hh:mm a').format(prayerTimesInstance.maghrib)},
+      {'name': 'Isha', 'time': DateFormat('hh:mm a').format(prayerTimesInstance.isha)},
+    ];
+
+    setState(() {
+      _prayerTimes = prayerTimesInstance;
+      _qiblaDirection = Qibla(_coordinates).direction;
+      _loading = false;
+    });
+  }
+
+  CalculationParameters _getCalculationMethod() {
+    switch (_selectedCalculationMethod) {
+      case CalculationMethod.karachi:
+        return CalculationMethod.karachi.getParameters();
+      case CalculationMethod.muslim_world_league:
+        return CalculationMethod.muslim_world_league.getParameters();
+      case CalculationMethod.umm_al_qura:
+        return CalculationMethod.umm_al_qura.getParameters();
+      case CalculationMethod.egyptian:
+        return CalculationMethod.egyptian.getParameters();
+      case CalculationMethod.north_america:
+        return CalculationMethod.north_america.getParameters();
+      default:
+        return CalculationMethod.muslim_world_league.getParameters();
+    }
+  }
+
+  BoxDecoration _dropdownDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12.0),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withAlpha(20),
+          spreadRadius: 1,
+          blurRadius: 5,
+          offset: const Offset(0, 3),
+        ),
+      ],
+      border: Border.all(color: const Color(0xff764CA5), width: 1.5),
+    );
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -37,9 +120,53 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    String nextPrayerName = '';
+    Duration timeRemaining = Duration.zero;
+    DateTime now = DateTime.now();
+
+    if (now.isBefore(_prayerTimes.fajr)) {
+      nextPrayerName = 'Fajr';
+      timeRemaining = _prayerTimes.fajr.difference(now);
+    } else if (now.isBefore(_prayerTimes.sunrise)) {
+      nextPrayerName = 'Sunrise';
+      timeRemaining = _prayerTimes.sunrise.difference(now);
+    } else if (now.isBefore(_prayerTimes.dhuhr)) {
+      nextPrayerName = 'Dhuhr';
+      timeRemaining = _prayerTimes.dhuhr.difference(now);
+    } else if (now.isBefore(_prayerTimes.asr)) {
+      nextPrayerName = 'Asr';
+      timeRemaining = _prayerTimes.asr.difference(now);
+    } else if (now.isBefore(_prayerTimes.maghrib)) {
+      nextPrayerName = 'Maghrib';
+      timeRemaining = _prayerTimes.maghrib.difference(now);
+    } else if (now.isBefore(_prayerTimes.isha)) {
+      nextPrayerName = 'Isha';
+      timeRemaining = _prayerTimes.isha.difference(now);
+    } else {
+      nextPrayerName = 'Fajr';
+      final tomorrow = now.add(const Duration(days: 1));
+      final tomorrowPrayerTimes = PrayerTimes(
+        _coordinates,
+        DateComponents.from(tomorrow),
+        _getCalculationMethod(),
+      );
+      timeRemaining = tomorrowPrayerTimes.fajr.difference(now);
+    }
+
+    String formattedTimeRemaining = '';
+    if (timeRemaining.inHours > 0) {
+      formattedTimeRemaining += '${timeRemaining.inHours} hours, ';
+    }
+    formattedTimeRemaining += '${timeRemaining.inMinutes.remainder(60)} minutes';
+
+
     return Scaffold(
-        extendBody: true,
-        backgroundColor: const Color(0xFFF3EDF7),
+      extendBody: true,
+      backgroundColor: const Color(0xFFF3EDF7),
       appBar: AppBar(
         elevation: 3,
         shadowColor: Colors.black,
@@ -84,9 +211,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   width: double.infinity,
                   margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration:
-                      BoxDecoration(borderRadius: BorderRadius.circular(15)),
+                  BoxDecoration(borderRadius: BorderRadius.circular(15)),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -116,9 +243,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Colors.white,
                               ),
                             ),
-                            const Text(
-                              '12:45 PM',
-                              style: TextStyle(
+                            Text(
+                              DateFormat('hh:mm a').format(DateTime.now()),
+                              style: const TextStyle(
                                 fontFamily: 'playfair',
                                 fontSize: 28,
                                 color: Colors.white,
@@ -126,22 +253,25 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(height: 5),
-                            const Text(
-                              '1st Ramadan 4445',
-                              style: TextStyle(
+                            Text(
+                              DateFormat.yMMMMEEEEd().format(DateTime.now()),
+                              style: const TextStyle(
                                 fontFamily: 'playfair',
                                 fontSize: 18,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const Text(
-                              'Tuesday, 12 Mar 2024',
-                              style: TextStyle(
-                                fontFamily: 'playfair',
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                'Qibla Direction: ${_qiblaDirection.toStringAsFixed(2)}°',
+                                style: const TextStyle(
+                                  fontFamily: 'playfair',
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -161,10 +291,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Container(
                         padding:
-                            EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                        const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                         child: Column(
                           children: [
-                            Center(
+                            const Center(
                               child: Text(
                                 "Category",
                                 style: TextStyle(
@@ -197,10 +327,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.only(top: 10, bottom: 10),
+                  padding: const EdgeInsets.only(top: 10, bottom: 10),
                   margin: const EdgeInsets.only(left: 16, right: 16),
                   decoration:
-                      BoxDecoration(borderRadius: BorderRadius.circular(15)),
+                  BoxDecoration(borderRadius: BorderRadius.circular(15)),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -247,11 +377,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.symmetric(horizontal: 15),
-                  padding: EdgeInsets.only(bottom: 10),
+                  margin: const EdgeInsets.symmetric(horizontal: 15),
+                  padding: const EdgeInsets.only(bottom: 10),
                   width: MediaQuery.of(context).size.width,
                   decoration:
-                      BoxDecoration(borderRadius: BorderRadius.circular(15)),
+                  BoxDecoration(borderRadius: BorderRadius.circular(15)),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -279,31 +409,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Colors.white,
                               ),
                             ),
-                            const Text(
-                              'Tuesday, 12 Mar 2024',
-                              style: TextStyle(
+                            Text(
+                              DateFormat.yMMMMEEEEd().format(DateTime.now()),
+                              style: const TextStyle(
                                 fontFamily: 'playfair',
                                 fontSize: 14,
                                 color: Colors.white70,
                               ),
                             ),
                             const SizedBox(height: 5),
-                            Divider(
+                            const Divider(
                                 height: 1, thickness: 1, color: Colors.white),
                             const SizedBox(height: 10),
-                            // Next prayer text and large time display
-                            const Text(
-                              'Next prayer: Asr in 2 hours, 17 minutes',
-                              style: TextStyle(
+                            Text(
+                              'Next prayer: $nextPrayerName in $formattedTimeRemaining',
+                              style: const TextStyle(
                                 fontFamily: 'playfair',
                                 fontSize: 15,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const Text(
-                              '4:26 PM',
-                              style: TextStyle(
+                            Text(
+                              DateFormat('hh:mm a').format(_prayerTimes.fajr),
+                              style: const TextStyle(
                                 fontFamily: 'playfair',
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -316,9 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  for (int i = 0;
-                                      i < prayerTimes.length;
-                                      i++)
+                                  for (int i = 0; i < prayerTimes.length; i++)
                                     Expanded(
                                       child: SalatTimeCard(
                                         title: prayerTimes[i]['name']!,
@@ -348,10 +475,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-        bottomNavigationBar: MainNavBarHolder(
-          selectedIndex: _selectedIndex,
-          onItemSelected: _onItemTapped,
-        )
+      bottomNavigationBar: MainNavBarHolder(
+        selectedIndex: _selectedIndex,
+        onItemSelected: _onItemTapped,
+      ),
     );
   }
 }
